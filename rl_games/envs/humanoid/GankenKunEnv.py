@@ -6,7 +6,7 @@ import webots_client
 
 class GankenKunEnv(gym.Env):
     DIRECTION = np.array([1,1,-1,-1,1,1,1,1,-1,1,1,-1,-1,1,1,1,1,-1,1])
-    OFFSET = np.array([0,0,-0.2,0.2,0,0,0,0,0,0,0,-0.2,0.2,0,0,0,0,0])
+    OFFSET = np.array([0,0,-0.2,0.2,0,0,0,0,0,0,0,-0.2,0.2,0,0,0,0,0,0])
     def __init__(self, **kwargs):
         gym.Env.__init__(self)
         self.webots = webots_client.Webots()
@@ -20,17 +20,14 @@ class GankenKunEnv(gym.Env):
     def step(self, action):
         self.walking_phase = (self.walking_phase+self.dt/self.walking_period)%1.0
         self.walking_phase += action[18]*self.dt/self.walking_period*0.5
-        #print("phase: "+str(self.walking_phase))
         right = 1-abs(2*((self.walking_phase*2)%1)*(self.walking_phase%1<0.5)-1)
         left = 1-abs(2*((self.walking_phase*2)%1)*(self.walking_phase%1>0.5)-1)
-        #print("right: "+str(right)+", left: "+str(left))
-        action = self.DIRECTION * action
         action[2] += right
         action[3] -= right
         action[11] += left
         action[12] -= left
-        #print(action)
-        self.webots.setAngle(0.2 * action[0:18] + self.OFFSET)
+        angles = [0.2 * self.DIRECTION[i] * action[i] + self.OFFSET[i] for i in range(len(action))]
+        self.webots.setAngle(angles)
         self.webots.measureSensors()
         state = []
         gravity_vec = [0, 0, -1]
@@ -46,7 +43,6 @@ class GankenKunEnv(gym.Env):
             pos = [blue1.position.X, blue1.position.Y, blue1.position.Z] 
             ball = self.webots.sensorMeasurements.object_positions[0]
             local_ball_pos = [ball.position.X - pos[0], ball.position.Y - pos[1], ball.position.Z - pos[2]]
-            print(ball.position)
 
         state += gravity_vec
         state += action.tolist()
