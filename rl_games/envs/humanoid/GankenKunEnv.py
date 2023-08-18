@@ -16,8 +16,6 @@ class GankenKunEnv(gym.Env):
         self.walking_period = 0.5
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(19, ), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-6, high=6, shape=(32, ), dtype=np.float32)
-        self.count = 0
-        self.servo_no = 0
     
     def step(self, action):
         self.walking_phase = (self.walking_phase+self.dt/self.walking_period)%1.0
@@ -29,14 +27,6 @@ class GankenKunEnv(gym.Env):
         action[11] += left
         action[12] -= left
         angles = [0.2 * self.DIRECTION[i] * action[i] + self.OFFSET[i] for i in range(len(action))]
-        angles = [0 for _ in angles]
-        angles[self.servo_no] = 3.14/4
-        self.count += 1
-        if self.count > 100:
-            self.count = 0
-            self.servo_no += 1
-            if self.servo_no >= len(angles):
-                self.servo_no = 0
         self.webots.setAngle(angles)
         self.webots.measureSensors()
         state = []
@@ -60,9 +50,6 @@ class GankenKunEnv(gym.Env):
         state += local_ball_pos
         state += projected_foward
         state += [self.walking_phase]
-
-        print(state)
-
         state = np.array(state, dtype=np.float32)
 
         reward = 0
