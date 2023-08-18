@@ -16,6 +16,8 @@ class GankenKunEnv(gym.Env):
         self.walking_period = 0.5
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(19, ), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-6, high=6, shape=(32, ), dtype=np.float32)
+        self.robot_pos = [0, 0, 0]
+        self.ball_pos = [0, 0, 0]
     
     def step(self, action):
         self.walking_phase = (self.walking_phase+self.dt/self.walking_period)%1.0
@@ -31,22 +33,21 @@ class GankenKunEnv(gym.Env):
         self.webots.measureSensors()
         state = []
         gravity_vec = [0, 0, -1]
-        pos = [0, 0, 0]
-        local_ball_pos = [0, 0, 0]
+        obj = self.webots.sensorMeasurements.object_positions
+        if len(obj) > 2:
+            pos = self.webots.sensorMeasurements.object_positions[1]
+            rot = pos.rotation
+            #gravity_vec = quat_rotate(rot, gravity_vec)
+            self.robot_pos = [pos.position.X, pos.position.Y, pos.position.Z] 
+            ball = self.webots.sensorMeasurements.object_positions[0]
+            self.ball_pos = [ball.position.X, ball.position.Y, ball.position.Z]
+        local_ball_pos = [self.ball_pos[i] - self.robot_pos[i] for i in range(3)]
         forward_vec = [1, 0, 0]
         projected_foward = [1, 0, 0]
-        obj = self.webots.sensorMeasurements.object_positions
-        if len(obj) > 1:
-            blue1 = self.webots.sensorMeasurements.object_positions[1]
-            rot = blue1.rotation
-            #gravity_vec = quat_rotate(rot, gravity_vec)
-            pos = [blue1.position.X, blue1.position.Y, blue1.position.Z] 
-            ball = self.webots.sensorMeasurements.object_positions[0]
-            local_ball_pos = [ball.position.X - pos[0], ball.position.Y - pos[1], ball.position.Z - pos[2]]
 
         state += gravity_vec
         state += action.tolist()
-        state += pos
+        state += self.robot_pos
         state += local_ball_pos
         state += projected_foward
         state += [self.walking_phase]
