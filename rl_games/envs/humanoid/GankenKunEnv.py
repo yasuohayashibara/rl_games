@@ -16,9 +16,22 @@ class GankenKunEnv(gym.Env):
         self.walking_period = 0.5
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(19, ), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-6, high=6, shape=(32, ), dtype=np.float32)
+        self.gravity_vec = [0, 0, -1]
         self.robot_pos = [0, 0, 0]
         self.ball_pos = [0, 0, 0]
     
+    def rotate(self, vector, rotation):
+        axis = rotation[0:3]
+        angle = rotation[3]
+        axis = axis / np.linalg.norm(axis)
+        K = np.array([
+            [0, -axis[2], axis[1]],
+            [axis[2], 0, -axis[0]],
+            [-axis[1], axis[0], 0]
+        ])
+        R = np.eye(3) + np.sin(angle) * K + (1 - np.cos(angle)) * np.dot(K, K)
+        return np.dot(R, vector)
+
     def step(self, action):
         self.walking_phase = (self.walking_phase+self.dt/self.walking_period)%1.0
         self.walking_phase += action[18]*self.dt/self.walking_period*0.5
@@ -32,20 +45,21 @@ class GankenKunEnv(gym.Env):
         self.webots.setAngle(angles)
         self.webots.measureSensors()
         state = []
-        gravity_vec = [0, 0, -1]
         obj = self.webots.sensorMeasurements.object_positions
         if len(obj) > 2:
             pos = self.webots.sensorMeasurements.object_positions[1]
             rot = pos.rotation
-            #gravity_vec = quat_rotate(rot, gravity_vec)
-            self.robot_pos = [pos.position.X, pos.position.Y, pos.position.Z] 
+            rot = np.array([rot.X, rot.Y, rot.Z, rot.W])
+            gravity_vec = np.array([0, 0, -1])
+            self.gravity_vec = self.rotate(gravity_vec, rot).tolist()
+            self.robot_pos = [pos.position.X, pos.position.Y, pos.position.Z]
             ball = self.webots.sensorMeasurements.object_positions[0]
             self.ball_pos = [ball.position.X, ball.position.Y, ball.position.Z]
         local_ball_pos = [self.ball_pos[i] - self.robot_pos[i] for i in range(3)]
         forward_vec = [1, 0, 0]
         projected_foward = [1, 0, 0]
 
-        state += gravity_vec
+        state += self.gravity_vec
         state += action.tolist()
         state += self.robot_pos
         state += local_ball_pos
