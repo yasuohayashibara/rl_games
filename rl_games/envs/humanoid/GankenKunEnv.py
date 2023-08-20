@@ -13,12 +13,12 @@ class GankenKunEnv(gym.Env):
         self.webots.initializeSensors()
         self.walking_phase = 0
         self.dt = 0.008
-        self.walking_period = 0.5
+        self.walking_period = 0.34
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(19, ), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-6, high=6, shape=(32, ), dtype=np.float32)
         self.gravity_vec = [0, 0, -1]
         self.robot_pos = [0, 0, 0]
-        self.ball_pos = [0, 0, 0]
+        self.local_ball_pos = [0, 0, 0]
     
     def rotate(self, vector, rotation):
         axis = rotation[0:3]
@@ -54,15 +54,20 @@ class GankenKunEnv(gym.Env):
             self.gravity_vec = self.rotate(gravity_vec, rot).tolist()
             self.robot_pos = [pos.position.X, pos.position.Y, pos.position.Z]
             ball = self.webots.sensorMeasurements.object_positions[0]
-            self.ball_pos = [ball.position.X, ball.position.Y, ball.position.Z]
-        local_ball_pos = [self.ball_pos[i] - self.robot_pos[i] for i in range(3)]
+            ball_pos = [ball.position.X, ball.position.Y, ball.position.Z]
+            local_ball_pos = np.array([ball_pos[i] - self.robot_pos[i] for i in range(3)])
+            rot[3] = -rot[3]
+            self.local_ball_pos = self.rotate(local_ball_pos, rot).tolist()
+
         forward_vec = [1, 0, 0]
         projected_foward = [1, 0, 0]
 
         state += self.gravity_vec
         state += action.tolist()
+        self.robot_pos[2] = 0
         state += self.robot_pos
-        state += local_ball_pos
+        self.local_ball_pos[2] = 0
+        state += self.local_ball_pos
         state += projected_foward
         state += [self.walking_phase]
         state = np.array(state, dtype=np.float32)
