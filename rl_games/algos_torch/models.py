@@ -245,6 +245,7 @@ class ModelA2CContinuousLogStd(BaseModel):
         def __init__(self, a2c_network, **kwargs):
             BaseModelNetwork.__init__(self, **kwargs)
             self.a2c_network = a2c_network
+            #breakpoint()
 
         def is_rnn(self):
             return self.a2c_network.is_rnn()

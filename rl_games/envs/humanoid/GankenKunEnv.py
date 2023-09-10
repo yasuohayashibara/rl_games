@@ -37,12 +37,16 @@ class GankenKunEnv(gym.Env):
         #action[:] = 0
         self.walking_phase = (self.walking_phase+self.dt/self.walking_period)%1.0
         self.walking_phase += action[18]*self.dt/self.walking_period*0.5
-        right = 1-abs(2*((self.walking_phase*2)%1)*(self.walking_phase%1<0.5)-1)
-        left = 1-abs(2*((self.walking_phase*2)%1)*(self.walking_phase%1>0.5)-1)
+        right = 2*(1-abs(2*((self.walking_phase*2)%1)*(self.walking_phase%1<0.5)-1))
+        left = 2*(1-abs(2*((self.walking_phase*2)%1)*(self.walking_phase%1>0.5)-1))
         action[2] += right
         action[3] -= right
         action[11] += left
         action[12] -= left
+        action[0] = -action[4]
+        action[9] = -action[13]
+        action[1] = 0
+        action[10] = 0
         angles = [0.2 * self.DIRECTION[i] * action[i] + self.OFFSET[i] for i in range(len(action))]
 
         self.webots.setAngle(angles)
@@ -54,9 +58,9 @@ class GankenKunEnv(gym.Env):
             rot = pos.rotation
             rot = np.array([rot.X, rot.Y, rot.Z, rot.W])
             gravity_vec = np.array([0, 0, -1])
-            self.gravity_vec = self.rotate(gravity_vec, rot).tolist()
+            #self.gravity_vec = self.rotate(gravity_vec, rot).tolist()
             forward_vec = np.array([1, 0, 0])
-            self.forward_vec = self.rotate(forward_vec, rot).tolist()
+            #self.forward_vec = self.rotate(forward_vec, rot).tolist()
             self.robot_pos = [pos.position.X, pos.position.Y, pos.position.Z]
             ball = self.webots.sensorMeasurements.object_positions[0]
             ball_pos = [ball.position.X, ball.position.Y, ball.position.Z]
@@ -73,6 +77,7 @@ class GankenKunEnv(gym.Env):
         state += self.forward_vec
         state += [self.walking_phase]
         state = np.array(state, dtype=np.float32)
+        # print(state)
 
         reward = 0
         done = False
