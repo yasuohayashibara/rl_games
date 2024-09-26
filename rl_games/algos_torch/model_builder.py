@@ -27,6 +27,7 @@ class NetworkBuilder:
         network_name = params['name']
         network = self.network_factory.create(network_name)
         network.load(params)
+        #breakpoint()
 
         return network
 
@@ -55,4 +56,6 @@ class ModelBuilder:
         model_name = params['model']['name']
         network = self.network_builder.load(params['network'])
         model = self.model_factory.create(model_name, network=network)
+        #breakpoint()
+        
         return model

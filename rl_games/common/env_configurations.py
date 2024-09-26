@@ -1,4 +1,5 @@
 import rl_games.envs.test
+import rl_games.envs.humanoid
 from rl_games.common import wrappers
 from rl_games.common import tr_helpers
 from rl_games.envs.brax import create_brax_env
@@ -196,6 +197,11 @@ def create_test_env(name, **kwargs):
     env = gym.make(name, **kwargs)
     return env
 
+def create_humanoid_env(name, **kwargs):
+    import rl_games.envs.humanoid
+    env = gym.make(name, **kwargs)
+    return env
+
 def create_minigrid_env(name, **kwargs):
     import gym_minigrid
     import gym_minigrid.wrappers
@@ -385,6 +391,10 @@ configurations = {
     },
     'test_env' : {
         'env_creator' : lambda **kwargs : create_test_env(kwargs.pop('name'), **kwargs),
+        'vecenv_type' : 'RAY'
+    },
+    'humanoid_env' : {
+        'env_creator' : lambda **kwargs : create_humanoid_env(kwargs.pop('name'), **kwargs),
         'vecenv_type' : 'RAY'
     },
     'minigrid_env' : {
